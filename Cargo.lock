@@ -1539,6 +1539,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "deeper-archive"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "argh",
+ "ctrlc",
+ "log",
+ "node-template-runtime",
+ "sc-chain-spec",
+ "serde",
+ "substrate-archive",
+ "toml",
+]
+
+[[package]]
 name = "derivative"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
