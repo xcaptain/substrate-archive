@@ -14,7 +14,7 @@ serde = "1.0"
 toml = "0.5"
 argh = "0.1.6"
 
-node-template-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
+node-runtime = { git = "https://github.com/deeper-chain/deeper-chain", branch = "master" }
 sc-chain-spec = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 substrate-archive = { path = "../../substrate-archive" }

@@ -22,7 +22,7 @@ use argh::FromArgs;
 use substrate_archive::ArchiveConfig;
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
-pub type ChainSpec = sc_chain_spec::GenericChainSpec<node_template_runtime::GenesisConfig>;
+pub type ChainSpec = sc_chain_spec::GenericChainSpec<node_runtime::GenesisConfig>;
 
 /// Node Template Archiver for development use.
 #[derive(Clone, FromArgs)]
