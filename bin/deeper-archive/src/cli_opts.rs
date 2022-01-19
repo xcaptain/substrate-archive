@@ -40,7 +40,7 @@ fn parse_chain_spec(path: &str) -> Result<ChainSpec, String> {
 }
 
 fn default_chain_spec() -> ChainSpec {
-	let file = include_bytes!("./dev.json");
+	let file = include_bytes!("./deeper-local.json");
 	let file: Cow<'static, [u8]> = Cow::Borrowed(file);
 	ChainSpec::from_json_bytes(file).expect("Default ChainSpec `dev` could not be loaded")
 }

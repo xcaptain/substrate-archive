@@ -20,7 +20,7 @@ use std::sync::{
 	Arc,
 };
 
-use node_template_runtime::{opaque::Block, RuntimeApi};
+use node_runtime::{opaque::Block, RuntimeApi};
 
 use substrate_archive::{Archive, ArchiveBuilder, SecondaryRocksDb};
 
