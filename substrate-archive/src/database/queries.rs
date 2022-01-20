@@ -325,7 +325,8 @@ mod tests {
 	use sqlx::{pool::PoolConnection, postgres::Postgres};
 	use test_common::TestGuard;
 
-	use polkadot_service::{Block, Hash};
+	// use polkadot_service::{Block, Hash};
+	use node_template_runtime::{Block, Hash};
 
 	// kusama block height dataset starts at this number
 	const BLOCK_START: usize = 3_000_000;

@@ -28,6 +28,7 @@ use hashbrown::HashMap;
 
 use sc_executor::{WasmExecutionMethod, WasmExecutor};
 use sp_core::traits::ReadRuntimeVersion;
+use sp_io::SubstrateHostFunctions;
 use sp_runtime::{
 	generic::SignedBlock,
 	traits::{Block as BlockT, Header as _, NumberFor},
@@ -35,7 +36,6 @@ use sp_runtime::{
 use sp_state_machine::BasicExternalities;
 use sp_storage::well_known_keys;
 use sp_version::RuntimeVersion;
-use sp_wasm_interface::HostFunctions;
 
 use crate::{
 	database::ReadOnlyDb,
@@ -47,15 +47,15 @@ pub struct RuntimeVersionCache<B, D> {
 	/// Hash of the WASM Blob -> RuntimeVersion
 	versions: ArcSwap<HashMap<u64, RuntimeVersion>>,
 	backend: Arc<ReadOnlyBackend<B, D>>,
-	exec: WasmExecutor,
+	exec: WasmExecutor<SubstrateHostFunctions>,
 }
 
 impl<B: BlockT, D: ReadOnlyDb + 'static> RuntimeVersionCache<B, D> {
 	pub fn new(backend: Arc<ReadOnlyBackend<B, D>>) -> Self {
-		let funs = sp_io::SubstrateHostFunctions::host_functions();
+		// let funs = sp_io::SubstrateHostFunctions::host_functions();
 
 		// TODO: https://github.com/paritytech/substrate-archive/issues/247
-		let exec = WasmExecutor::new(WasmExecutionMethod::Interpreted, Some(128), funs, 1, None);
+		let exec = WasmExecutor::<SubstrateHostFunctions>::new(WasmExecutionMethod::Interpreted, Some(128), 8, None, 2);
 		Self { versions: ArcSwap::from_pointee(HashMap::new()), backend, exec }
 	}
 
@@ -137,7 +137,7 @@ impl<B: BlockT> VersionRange<B> {
 }
 
 fn decode_version(version: &[u8]) -> Result<sp_version::RuntimeVersion> {
-	let v: RuntimeVersion = sp_api::OldRuntimeVersion::decode(&mut &*version)?.into();
+	let v: RuntimeVersion = Decode::decode(&mut &*version)?;
 	let core_api_id = sp_core::hashing::blake2_64(b"Core");
 	if v.has_api_with(&core_api_id, |v| v >= 3) {
 		sp_api::RuntimeVersion::decode(&mut &*version).map_err(Into::into)

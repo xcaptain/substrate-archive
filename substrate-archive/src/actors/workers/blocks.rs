@@ -36,6 +36,7 @@ use crate::{
 	error::{ArchiveError, Result},
 	types::{BatchBlock, Block},
 };
+
 type DatabaseAct = Address<DatabaseActor>;
 type MetadataAct<B> = Address<MetadataActor<B>>;
 

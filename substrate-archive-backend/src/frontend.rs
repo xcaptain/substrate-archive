@@ -18,7 +18,7 @@ mod client;
 
 use serde::Deserialize;
 use std::{
-	collections::HashMap,
+	collections::{BTreeMap, HashMap},
 	convert::{TryFrom, TryInto},
 	path::PathBuf,
 	str::FromStr,
@@ -33,9 +33,7 @@ use sc_executor::{WasmExecutionMethod, WasmExecutor};
 use sc_service::{ChainSpec, ClientConfig, LocalCallExecutor, TransactionStorageMode};
 use sp_api::ConstructRuntimeApi;
 use sp_core::traits::SpawnNamed;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT};
-use sp_wasm_interface::Function;
-use sp_wasm_interface::HostFunctions;
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 
 pub use self::client::{Client, GetMetadata};
 use crate::{database::ReadOnlyDb, error::BackendError, read_only_backend::ReadOnlyBackend, RuntimeApiCollection};
@@ -44,7 +42,8 @@ use crate::{database::ReadOnlyDb, error::BackendError, read_only_backend::ReadOn
 pub type TArchiveClient<TBl, TRtApi, D> = Client<TFullCallExecutor<TBl, D>, TBl, TRtApi, D>;
 
 /// Full client call executor type.
-type TFullCallExecutor<TBl, D> = LocalCallExecutor<TBl, ReadOnlyBackend<TBl, D>, WasmExecutor>;
+type TFullCallExecutor<TBl, D> =
+	LocalCallExecutor<TBl, ReadOnlyBackend<TBl, D>, WasmExecutor<sp_io::SubstrateHostFunctions>>;
 
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub enum ExecutionMethod {
@@ -85,7 +84,7 @@ pub struct RuntimeConfig {
 	/// are included in the chain_spec and primarily for fixing problematic on-chain wasm.
 	/// If both are in use, the `wasm_runtime_overrides` takes precedence.
 	#[serde(skip)]
-	code_substitutes: HashMap<String, Vec<u8>>,
+	code_substitutes: BTreeMap<String, Vec<u8>>,
 	/// Method of storing and retrieving transactions(extrinsics).
 	#[serde(skip, default = "default_storage_mode")]
 	pub storage_mode: TransactionStorageMode,
@@ -131,12 +130,12 @@ where
 			.code_substitutes
 			.into_iter()
 			.map(|(hash, code)| {
-				let hash = B::Hash::from_str(&hash).map_err(|_| {
+				let number = NumberFor::<B>::from_str(&hash).map_err(|_| {
 					BackendError::Msg(format!("Failed to parse `{}` as block hash for code substitute.", hash))
 				})?;
-				Ok((hash, code))
+				Ok((number, code))
 			})
-			.collect::<Result<HashMap<B::Hash, Vec<u8>>, BackendError>>()?;
+			.collect::<Result<HashMap<NumberFor<B>, Vec<u8>>, BackendError>>()?;
 
 		Ok(ClientConfig {
 			offchain_worker_enabled: false,
@@ -152,7 +151,6 @@ where
 pub fn runtime_api<Block, Runtime, D: ReadOnlyDb + 'static>(
 	config: RuntimeConfig,
 	backend: Arc<ReadOnlyBackend<Block, D>>,
-	host_functions: Option<Vec<&'static dyn Function>>,
 	task_executor: impl SpawnNamed + 'static,
 ) -> Result<TArchiveClient<Block, Runtime, D>, BackendError>
 where
@@ -165,11 +163,7 @@ where
 		+ 'static,
 	<Runtime::RuntimeApi as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
-	let host_functions =
-		if let Some(funcs) = host_functions { funcs } else { sp_io::SubstrateHostFunctions::host_functions() };
-
-	let executor =
-		WasmExecutor::new(config.exec_method.into(), config.wasm_pages, host_functions, config.block_workers, None);
+	let executor = WasmExecutor::new(config.exec_method.into(), config.wasm_pages, config.block_workers, None, 2);
 	let executor = LocalCallExecutor::new(backend.clone(), executor, Box::new(task_executor), config.try_into()?)?;
 	let client = Client::new(backend, executor, ExecutionExtensions::new(execution_strategies(), None, None))?;
 	Ok(client)
